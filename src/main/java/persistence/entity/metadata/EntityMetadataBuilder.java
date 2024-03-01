@@ -27,6 +27,7 @@ public class EntityMetadataBuilder {
 
     private static EntityColumn buildColumn(Field field) {
         EntityColumn column = new EntityColumn();
+        column.setField(field);
         column.setName(EntityInfoExtractor.getColumnName(field));
         column.setSqlTypeCode(dataType.getSqlTypeCode(field.getType()));
         column.setPrimaryKey(EntityInfoExtractor.isPrimaryKey(field));

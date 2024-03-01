@@ -22,14 +22,20 @@ public class DMLQueryFormatter {
     }
 
     public static String createSelectByConditionQuery(String sql, String conditionClause) {
-        String selectByConditionQueryFormat = "%s WHERE %s";
+        String selectByConditionQueryFormat = "%s %s";
 
         return String.format(selectByConditionQueryFormat, sql, conditionClause);
     }
 
     public static String createDeleteQuery(String tableName, String conditionClause) {
-        final String deleteQueryFormat = "DELETE FROM %s WHERE %s";
+        final String deleteQueryFormat = "DELETE FROM %s %s";
 
         return String.format(deleteQueryFormat, tableName, conditionClause);
+    }
+
+    public static String createUpdateQuery(String tableName, String valueSetClause, String conditionclause) {
+        final String updateQueryFormat = "UPDATE %s SET %s %s";
+
+        return String.format(updateQueryFormat, tableName, valueSetClause, conditionclause);
     }
 }

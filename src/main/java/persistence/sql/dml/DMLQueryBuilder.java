@@ -1,6 +1,5 @@
 package persistence.sql.dml;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.stream.Collectors;
 import persistence.core.EntityContextManager;
@@ -49,7 +48,8 @@ public class DMLQueryBuilder extends EntityContextManager {
         EntityMetadata entityMetadata = getEntityMetadata(clazz);
 
         String sql = selectAllSql(clazz);
-        String condition = createCondition(entityMetadata.getIdColumn().getName(), id, "=");
+        String condition = createCondition(entityMetadata.getIdColumn().getName(), id);
+
         return DMLQueryFormatter.createSelectByConditionQuery(sql, condition);
     }
 
@@ -57,45 +57,55 @@ public class DMLQueryBuilder extends EntityContextManager {
         EntityMetadata entityMetadata = getEntityMetadata(entity.getClass());
 
         String tableName = entityMetadata.getTableName();
-        String deleteConditionClause = wherePrimaryKeyClause(entityMetadata, entity);
+        String name = entityMetadata.getIdColumn().getName();
+        Object value = getColumnValue(entity, name);
+        String whereClauses = createCondition(name, value);
 
-        return DMLQueryFormatter.createDeleteQuery(tableName, deleteConditionClause);
+        return DMLQueryFormatter.createDeleteQuery(tableName, whereClauses);
     }
 
-    private String wherePrimaryKeyClause(EntityMetadata entityMetadata, Object object) {
+    public String updateSql(Object entity) {
+        EntityMetadata entityMetadata = getEntityMetadata(entity.getClass());
+
+        String tableName = entityMetadata.getTableName();
         String idColumnName = entityMetadata.getIdColumn().getName();
-        Object value = getColumnValue(object, entityMetadata.getIdColumn().getName());
+        Object idValue = getColumnValue(entity, idColumnName);
+        String valueSetClause = getUpdateColumnValueClause(entityMetadata, entity);
+        String whereClauses = createCondition(idColumnName, idValue);
 
-        return createCondition(idColumnName, value, "=");
+        return DMLQueryFormatter.createUpdateQuery(tableName, valueSetClause, whereClauses);
     }
 
-    private String createCondition(String columnName, Object value, String operator) {
+    private String getUpdateColumnValueClause(EntityMetadata entityMetadata, Object entity) {
 
-        return String.format("%s %s %s", columnName, operator, formatValue(value));
+        return entityMetadata.getInsertTargetColumns().stream()
+            .map(column -> column.getName() + " = " + getColumnValueWithSqlFormat(entity, column.getName()))
+            .collect(Collectors.joining(COLUMN_SEPARATOR));
     }
+
+    private String createCondition(String columnName, Object value) {
+        WhereCondition whereCondition = new WhereCondition();
+        whereCondition.eq(columnName, value);
+
+        return whereCondition.build();
+    }
+
 
     private String getColumnNamesClause(List<EntityColumn> insertTargetColumns) {
+
         return insertTargetColumns.stream()
             .map(EntityColumn::getName)
             .collect(Collectors.joining(COLUMN_SEPARATOR));
     }
 
     private String getColumnValueWithSqlFormat(Object entity, String columnName) {
-        return formatValue(getColumnValue(entity, columnName));
+
+        return EntityValue.formatValue(getColumnValue(entity, columnName));
     }
 
     private Object getColumnValue(Object entity, String columnName) {
-        Field field = EntityInfoExtractor.getFieldByColumnName(entity.getClass(), columnName);
 
-        return EntityInfoExtractor.getFieldValue(entity, field);
-    }
-
-    private String formatValue(Object value) {
-        if (value instanceof String) {
-            return "'" + value + "'";
-        }
-
-        return value == null ? "" : value.toString();
+        return EntityInfoExtractor.getColumnValue(entity, columnName);
     }
 
 }

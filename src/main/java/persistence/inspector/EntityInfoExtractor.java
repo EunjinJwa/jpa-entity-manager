@@ -51,6 +51,12 @@ public class EntityInfoExtractor {
         return EntityFieldInspector.hasAnnotation(id, Id.class);
     }
 
+    public static Object getColumnValue(Object object, String columnName) {
+        Field fieldByColumnName = getFieldByColumnName(object.getClass(), columnName);
+
+        return getFieldValue(object, fieldByColumnName);
+    }
+
     public static Object getFieldValue(Object object, Field field) {
         try {
             field.setAccessible(true);
